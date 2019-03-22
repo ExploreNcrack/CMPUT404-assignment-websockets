@@ -14,7 +14,7 @@
 # limitations under the License.
 #
 import flask
-from flask import Flask, request
+from flask import Flask, request, redirect, jsonify
 from flask_sockets import Sockets
 import gevent
 from gevent import queue
@@ -69,12 +69,25 @@ myWorld.add_set_listener( set_listener )
 @app.route('/')
 def hello():
     '''Return something coherent here.. perhaps redirect to /static/index.html '''
-    return None
+    return redirect("/static/index.html",301)
 
 def read_ws(ws,client):
     '''A greenlet function that reads from the websocket and updates the world'''
     # XXX: TODO IMPLEMENT ME
-    return None
+    try:
+        while True:
+            # forever listening for messages
+            msg = ws.receive()  # receive from web socket
+            print("WS RECV: %s" % msg)
+            if (msg is not None):
+                packet = json.loads(msg) # parse it into json
+                # update the world
+                
+            else:
+                break
+    except:
+        '''Done'''
+        pass
 
 @sockets.route('/subscribe')
 def subscribe_socket(ws):
@@ -115,7 +128,8 @@ def get_entity(entity):
 @app.route("/clear", methods=['POST','GET'])
 def clear():
     '''Clear the world out!'''
-    return None
+    myWorld.clear()
+    return jsonify(myWorld.world())
 
 
 
