@@ -3,7 +3,7 @@
   <head> 
     <title>Websockets Assignment</title> 
     <meta charset="utf-8" /> 
-    <meta content='width=device-width; height=device-height; initial-scale=1.0; maximum-scale=1.0; user-scalable=0;' name='viewport' />
+    <meta content='width=device-width, height=device-height, initial-scale=1.0, maximum-scale=1.0, user-scalable=0' name='viewport' />
     <meta name="viewport" content="width=device-width" />
     <meta name="license" content="
         Copyright 2013 Google, Abram Hindle
@@ -48,7 +48,7 @@ world = {};
 function drawCircle(context,entity) {
     with(context) {
         beginPath();                
-        lineWidth = 3;
+        lineWidth = 5;
         var x = entity["x"];
         var y = entity["y"];
         //moveTo(x,y);
@@ -125,6 +125,12 @@ function addEntity(entity, data) {
     world[entity] = data;
     drawNextFrame(); // (but should we?)
     //XXX: Send a XHTML Request that updates the entity you just modified!
+    // send the new data that local user has draw to the server 
+    // so that the server will be able to notify the other clients that are connected to the server and update their screen
+    // this time we use web socket to send it
+    obj = {}  
+    obj[entity] = data  // has to set it in this way, unlike python, javascript will automatrically cast every key value into string 
+    socket.send(JSON.stringify(obj))
 }
 var counter = 0;
 function addEntityWithoutName(data) {
@@ -254,15 +260,46 @@ function wsSetup() {
     socket = new WebSocket(url);
     socket.onopen = function() {
         //XXX: TODO What are you going to do here?
-        
+        // send the HTTP GET request for getting the initial world
+        // so that after every refresh, it will still have all the previous world state information
+        var xhr = new XMLHttpRequest();
+        xhr.onreadystatechange = function () {
+            if (xhr.readyState==4) {
+                try {
+                    if (xhr.status==200) {
+                        //XXX: parse some JSON from the request!
+                        var RespondJSONdata = JSON.parse(xhr.responseText);
+                        for(var key in RespondJSONdata){
+                            world[key] =  RespondJSONdata[key];
+                        }
+                    }
+                } 
+                catch(e) {
+                    alert('Error: ' + e.name);
+                }
+            }
+        };
+        // send the HTTP GET request to the server
+        xhr.open("GET", "http://"+host+"/world");
+        xhr.send();
     };
     socket.onerror = function(msg) {
         debug("WebSocket Error:" + msg.data);
     };
     socket.onmessage = function(msg) {  
         try {
-            debug("WebSocket Recv:" + msg.data);
-            //XXX: TODO What are you going to do here?            
+            console.log("WebSocket Recv:" + msg.data);
+            //XXX: TODO What are you going to do here?   
+            // this will be the message send from server that there are new data updated
+            updateData = JSON.parse(msg.data);
+            for(var key in updateData){
+                world[key] = updateData[key];
+                // after update the new data to world  
+                // draw it 
+                drawNextFrame();
+            }
+            
+                
         } catch (e) {
             alert("socket on message: " + e);
         }

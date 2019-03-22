@@ -142,7 +142,7 @@ def subscribe_socket(ws):
         # when it dies
         clients.remove(client)
         gevent.kill(g)
-    return None
+    
 
 
 # I give this to you, this is how you get the raw body/data portion of a post in flask
