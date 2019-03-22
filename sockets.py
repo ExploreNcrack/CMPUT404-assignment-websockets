@@ -84,6 +84,13 @@ class Client:
 
 def set_listener( entity, data ):
     ''' do something with the update ! '''
+    # make the update data as dictionary 
+    dataDic = {entity:data}
+    # convert the update data into json encoded string
+    updateMessage = json.dumps(dataDic)  # since Websocket does not need HTTP header
+    # send this update to all client that are connect to server
+    for client in clients:
+        client.put(updateMessage)
 
 myWorld.add_set_listener( set_listener )
         
@@ -155,8 +162,9 @@ def update(entity):
     '''update the entities via this interface'''
     updateDictionaryData = flask_post_json(request)
     for key, val in updateDictionaryData.items():
-        myWorld.update(entity, key, val)
-    return 
+        myWorld.update(entity, key, val) # call myWorld.update to update the data from client actions
+        # myWorld.update will handle send the update data to all other client
+    return jsonify(myWorld.get(entity))
 
 @app.route("/world", methods=['POST','GET'])    
 def world():
